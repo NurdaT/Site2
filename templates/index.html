@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="kk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Чат-бот</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div id="chat-container">
+        <h1>Добро пожаловать! Задайте вопрос Чат-боту.</h1>
+        <div id="chat-box"></div>
+
+        <div id="input-container">
+            <input type="text" id="user-input" placeholder="Напишите свой вопрос...">
+
+            <button onclick="sendMessage('local')">📋</button>
+            <button onclick="sendMessage('ai')">🤖</button>
+            <button id="voice-btn">🎤</button>
+        </div>
+    </div>
+
+    <audio id="bot-audio" style="display:none;" controls></audio>
+
+<script>
+    async function sendMessage(mode) {
+        let userInput = document.getElementById("user-input").value;
+        let chatBox = document.getElementById("chat-box");
+
+        if (userInput.trim() === "") return;
+
+        chatBox.innerHTML += `<div class="message user-message"><p>${userInput}</p></div>`;
+        document.getElementById("user-input").value = "";
+
+        let response = await fetch("/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                message: userInput,
+                mode: mode // 'local' или 'ai'
+            })
+        });
+
+        let data = await response.json();
+
+        chatBox.innerHTML += `<div class="message bot-message"><p>${data.response}</p></div>`;
+
+        let audio = document.getElementById("bot-audio");
+        audio.src = data.audio;
+        audio.play();
+
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+
+    document.getElementById("voice-btn").addEventListener("click", () => {
+        let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        recognition.lang = "ru-RU";
+        recognition.start();
+        recognition.onresult = (event) => {
+            let voiceText = event.results[0][0].transcript;
+            document.getElementById("user-input").value = voiceText;
+        };
+    });
+</script>
+</body>
+</html>
